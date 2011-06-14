@@ -28,6 +28,8 @@ def _replay(requests, speedup):
     print "%d requests to go (time: %s)" % (len(requests), total_delta)
     last_time = requests[0][0]
     for request_time, host, path in requests:
+        if request_time < last_time:
+            request_time = last_time
         time_delta = (request_time - last_time) // speedup
         if time_delta:
             if time_delta and time_delta.seconds > 10:
@@ -40,8 +42,8 @@ def _replay(requests, speedup):
             urllib2.urlopen(url)
         except Exception:
             req_result = "FAILED"
-        print ("[%s] REQUEST: %s -- %s"
-            % (request_time.strftime("%H:%M:%S"), url, req_result))
+        print ("[%s] %s -- %s"
+            % (request_time.strftime("%H:%M:%S"), req_result, url))
 
 def _setup_http_client(proxy):
     """Configure proxy server and install HTTP opener"""
