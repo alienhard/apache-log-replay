@@ -13,6 +13,9 @@ HOST_INDEX = 0
 TIME_INDEX = 3
 PATH_INDEX = 6
 
+# HTTP client timeout in seconds
+TIMEOUT = 10
+
 def main(filename, proxy, speedup=1):
     """Setup and start replaying."""    
     requests = _parse_logfile(filename)
@@ -29,12 +32,18 @@ def _replay(requests, speedup):
         _delay_request(request_time, log_start, replay_start, speedup)
         url = "http://" + host + path
         req_result = "OK"
+        req_start = datetime.now()
         try:
-            urllib2.urlopen(url)
-        except Exception:
-            req_result = "FAILED"
-        print ("[%s] %s -- %s"
-            % (request_time.strftime("%H:%M:%S"), req_result, url))
+            urllib2.urlopen(url, timeout=TIMEOUT)
+        except urllib2.HTTPError, e:
+            req_result = 'FAILED[' + str(e.code) + ']'
+        except urllib2.URLError, e:
+            req_result = 'FAILED[' + str(e.reason) + ']'
+        req_delta = (datetime.now() - req_start)
+        req_msecs = req_delta.seconds * 1000 + req_delta.microseconds / 1000
+        print ("[%s] %s %4i -- %s"
+            % (request_time.strftime("%H:%M:%S"),
+            req_result, req_msecs, url))
 
 def _delay_request(request_time, log_start, replay_start, speedup):
     log_delta = request_time - log_start        
